@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# teach.sqlite too big than 100MB from github
+dbs/teach.sqlite
+
 # pycharm ide
 .idea
 
