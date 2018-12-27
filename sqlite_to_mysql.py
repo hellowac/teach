@@ -86,7 +86,7 @@ if not engine.dialect.has_table(engine, IreadWeekBookDetail.__tablename__):
 
 
 def query_sqlite():
-    conn = sqlite3.connect('dbs/teach.sqlite', timeout=30000)
+    conn = sqlite3.connect('dbs/ireadweek.sqlite', timeout=30000)
 
     def dict_factory(cursor, row):
         d = {}
@@ -102,13 +102,18 @@ def query_sqlite():
 
     conn.row_factory = dict_factory
     cur = conn.cursor()
-    # cur.execute("select * from book_title")
-    cur.execute("select * from book_detail")
+    cur.execute("select * from book_title")
+    # cur.execute("select * from book_detail")
+
+    from sqlalchemy import exists
 
     for record in cur.fetchall():
-        # detail = IreadWeekBoookTitle(**record)
-        detail = IreadWeekBookDetail(**record)
-        session.add(detail)
+
+        existsed = session.query(exists().where(IreadWeekBookDetail.id == record['id'])).scalar()
+
+        if not existsed:
+            session.add(IreadWeekBoookTitle(**record))
+            # session.add(IreadWeekBookDetail(**record))
 
     session.commit()
 
