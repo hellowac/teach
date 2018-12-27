@@ -9,8 +9,7 @@ class IreadSpider(scrapy.Spider):
     name = 'iread'
     allowed_domains = ['www.ireadweek.com']
     start_urls = [
-        # 'http://www.ireadweek.com/',
-        'http://www.ireadweek.com/index.php/index/113.html',
+        'http://www.ireadweek.com/',
     ]
 
     def parse(self, response):
