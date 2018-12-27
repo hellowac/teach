@@ -18,7 +18,7 @@ NEWSPIDER_MODULE = 'teach.spiders'
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 和scrapy.cfg平级
-SQLITE_PATH = os.path.join(BASE_DIR, 'dbs', 'teach.sqlite')
+SQLITE_PATH = os.path.join(BASE_DIR, 'dbs', 'ireadweek.sqlite')
 IMAGES_STORE = os.path.join(BASE_DIR, 'media', 'images')
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent

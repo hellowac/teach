@@ -60,7 +60,7 @@ class SqlitePipeline(object):
               dwld_url TEXT,
               img_type TEXT, 
               img_name TEXT,
-              img TEXT);
+              img_bs4 TEXT);
         """
 
         self.conn.execute(book_title_table)
@@ -115,17 +115,17 @@ class SqlitePipeline(object):
 
             img_file = item['images'][0] if item['images'] else {}
             img_file = os.path.join(self.img_dir, img_file['path']) if img_file else ''
-            img_64 = self.img_base64(img_file) if img_file else ''
+            img_bs4 = self.img_base64(img_file) if img_file else ''
             img_type = img_file.rpartition('.')[-1] if img_file else ''
             img_name = os.path.basename(img_file)
 
             # 删除该图片
             # os.remove(img_file)
 
-            insert_sql = ("INSERT INTO book_detail(id, url, name, author, tags, judge, descr, dwld_url, img_type, img_name, img) "
+            insert_sql = ("INSERT INTO book_detail(id, url, name, author, tags, judge, descr, dwld_url, img_type, img_name, img_bs4) "
                           "VALUES ({id}, '{url}', '{name}', '{author}', '{tags}', {judge}, '{descr}', '{dwld_url}', "
                           "'{img_type}', '{img_name}', '{img}')").format(
-                          img_type=img_type, img_name=img_name, img=img_64, **item)
+                          img_type=img_type, img_name=img_name, img=img_bs4, **item)
 
         self.conn.execute(insert_sql)
         self.conn.commit()
