@@ -8,6 +8,7 @@
 import os
 import base64
 import sqlite3
+from datetime import datetime
 from scrapy.exceptions import DropItem
 
 from .spiders.iread import IreadSpider
@@ -19,6 +20,7 @@ class SqlitePipeline(object):
         self.sqlite_path = path
         self.img_dir = img_dir
         self.conn = None
+        self.sql_file = open(f'insert_sql_{datetime.now().strftime("%Y-%m-%d")}.sql', 'w')
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -35,11 +37,11 @@ class SqlitePipeline(object):
         self.conn = sqlite3.connect(self.sqlite_path, timeout=30000)
 
         # sqlite_master 表可以查询源信息
-        check_sql = "SELECT name FROM sqlite_master WHERE type='table' AND name='book_title';"
+        check_sql = "SELECT name FROM sqlite_master WHERE type='table' AND name='ireadweek_book_title';"
 
         # 书籍title表: id, url, name, author, download_num
         book_title_table = """
-            CREATE TABLE IF NOT EXISTS book_title (
+            CREATE TABLE IF NOT EXISTS ireadweek_book_title (
               id INTEGER, 
               url TEXT, 
               name TEXT, 
@@ -49,7 +51,7 @@ class SqlitePipeline(object):
 
         # 书籍详细表: id, url, name, author, tags, judge, descr, img_type, img_name, img
         book_detail_table = """
-            CREATE TABLE IF NOT EXISTS book_detail (
+            CREATE TABLE IF NOT EXISTS ireadweek_book_detail (
               id INTEGER, 
               url TEXT, 
               judge REAL, 
@@ -72,7 +74,7 @@ class SqlitePipeline(object):
 
         self.conn.close()
 
-    def is_crawled_url(self, url, table='book_title'):
+    def is_crawled_url(self, url, table='ireadweek_book_title'):
         """检查该url是否爬过，爬过则不爬"""
 
         query_sql = f"select url from {table} where url = '{url}';"
@@ -84,7 +86,7 @@ class SqlitePipeline(object):
 
     def is_crawled_detail(self, url):
 
-        return self.is_crawled_url(url, table='book_detail')
+        return self.is_crawled_url(url, table='ireadweek_book_detail')
 
     is_crawled_title = is_crawled_url
 
@@ -105,7 +107,7 @@ class SqlitePipeline(object):
             if self.is_crawled_title(item['url']):
                 raise DropItem(f'crawled title url: {item["url"]}')
 
-            insert_sql = ("INSERT INTO book_title(id, url, name, author, download_num) "
+            insert_sql = ("INSERT INTO ireadweek_book_title(id, url, name, author, download_num) "
                           "VALUES ({id}, '{url}', '{name}', '{author}', {download_num})").format(**item)
 
         # 保存书籍detail
@@ -118,17 +120,26 @@ class SqlitePipeline(object):
             img_bs4 = self.img_base64(img_file) if img_file else ''
             img_type = img_file.rpartition('.')[-1] if img_file else ''
             img_name = os.path.basename(img_file)
+            descr = item.pop('descr', '')
+            descr = descr.replace("'", "\\'")
+            descr = descr.replace('"', '\\"')
 
             # 删除该图片
             # os.remove(img_file)
 
-            insert_sql = ("INSERT INTO book_detail(id, url, name, author, tags, judge, descr, dwld_url, img_type, img_name, img_bs4) "
+            insert_sql = ("INSERT INTO ireadweek_book_detail(id, url, name, author, tags, judge, descr, dwld_url, img_type, img_name, img_bs4) "
                           "VALUES ({id}, '{url}', '{name}', '{author}', '{tags}', {judge}, '{descr}', '{dwld_url}', "
                           "'{img_type}', '{img_name}', '{img}')").format(
-                          img_type=img_type, img_name=img_name, img=img_bs4, **item)
+                          img_type=img_type, img_name=img_name, img=img_bs4, descr=descr, **item)
 
-        self.conn.execute(insert_sql)
-        self.conn.commit()
+        # 报错则插入sql文件中
+        try:
+            self.conn.execute(insert_sql)
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+            self.sql_file.write(insert_sql+';')
+            self.sql_file.write('\r\n')
 
     def img_base64(self, img_file):
         """计算图片的base64表示
